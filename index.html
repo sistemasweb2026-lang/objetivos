@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#0d0d12"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Mi Sistema"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
+<link rel="icon" type="image/svg+xml" href="icon.svg"/>
+<title>Mi Sistema</title>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     AUTH OVERLAY — visible hasta que el usuario inicia sesión
+     ══════════════════════════════════════════════════ -->
+<div id="authOverlay" class="hidden">
+  <div class="auth-card">
+    <div class="auth-logo">🎯</div>
+    <div class="auth-title">Mi Sistema</div>
+    <div class="auth-sub">Tu gestor de productividad personal en la nube</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login"    onclick="showAuthTab('login')">Iniciar sesión</button>
+      <button class="auth-tab"        data-tab="register" onclick="showAuthTab('register')">Registrarse</button>
+    </div>
+
+    <!-- Login -->
+    <div id="loginForm" class="auth-form">
+      <div class="fg">
+        <label>Email o nombre de usuario</label>
+        <input id="lEmail" type="text" placeholder="tu@email.com" autocomplete="username"/>
+      </div>
+      <div class="fg">
+        <label>Contraseña</label>
+        <input id="lPass" type="password" placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')authLogin()"/>
+      </div>
+      <button id="loginBtn" class="btn-big" onclick="authLogin()">Iniciar sesión</button>
+    </div>
+
+    <!-- Register -->
+    <div id="registerForm" class="auth-form auth-form-hidden">
+      <div class="fg">
+        <label>Nombre de usuario</label>
+        <input id="rUser" type="text" placeholder="Tu nombre" autocomplete="name"/>
+      </div>
+      <div class="fg">
+        <label>Email</label>
+        <input id="rEmail" type="email" placeholder="tu@email.com" autocomplete="email"/>
+      </div>
+      <div class="fg">
+        <label>Contraseña (mín. 8 caracteres)</label>
+        <input id="rPass" type="password" placeholder="••••••••" autocomplete="new-password"/>
+      </div>
+      <div class="fg">
+        <label>Confirmar contraseña</label>
+        <input id="rPass2" type="password" placeholder="••••••••" autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')authRegister()"/>
+      </div>
+      <button id="registerBtn" class="btn-big" onclick="authRegister()">Crear cuenta</button>
+    </div>
+
+    <div id="authError" class="auth-error"></div>
+
+    <div class="auth-divider">o</div>
+    <button class="auth-guest" onclick="useAsGuest()">
+      📱 Usar sin cuenta (solo en este dispositivo)
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     APP PRINCIPAL
+     ══════════════════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+  <!-- ── URGENT OVERLAY ───────────────────────────── -->
+  <div id="urgentOverlay">
+    <div class="ucard">
+      <div class="uemoji" id="uEmoji">⏰</div>
+      <div class="utitle" id="uTitle">Título</div>
+      <div class="usub"   id="uSub">Subtítulo</div>
+      <div class="ubtns">
+        <button class="ubtn ubtn-snooze" onclick="snoozeUrgent()">⏰ +10 min</button>
+        <button class="ubtn ubtn-done"   onclick="doneUrgent()">✅ Completar</button>
+      </div>
+      <button class="ubtn-dismiss" onclick="dismissUrgent()">Recordar más tarde</button>
+    </div>
+  </div>
+
+  <!-- ── SIDEBAR (desktop) ────────────────────────── -->
+  <aside id="sidebar">
+    <div class="sb-header">
+      <div class="sb-logo">🎯 Mi Sistema</div>
+      <div class="sb-user" id="sbUser"></div>
+    </div>
+    <nav class="sb-nav">
+      <button class="snav-item active" onclick="goTo('dash')"      id="sn-dash">
+        <span class="sni">🏠</span> Inicio
+        <span class="snbadge" id="snb-d"></span>
+      </button>
+      <button class="snav-item" onclick="goTo('tareas')"    id="sn-tareas">
+        <span class="sni">✅</span> Tareas
+        <span class="snbadge" id="snb-t"></span>
+      </button>
+      <button class="snav-item" onclick="goTo('enfoque')"   id="sn-enfoque">
+        <span class="sni">🍅</span> Enfoque
+      </button>
+      <button class="snav-item" onclick="goTo('objetivos')" id="sn-objetivos">
+        <span class="sni">🏆</span> Objetivos
+        <span class="snbadge" id="snb-o"></span>
+      </button>
+      <button class="snav-item" onclick="goTo('metas')"     id="sn-metas">
+        <span class="sni">🚀</span> Metas
+      </button>
+    </nav>
+    <div class="sb-footer">
+      <button class="sb-foot-btn" onclick="openNotifCenter()">
+        🔔 Notificaciones <span class="bc" id="bellC-sb" style="display:none"></span>
+      </button>
+      <button class="sb-foot-btn" onclick="openSettings()">⚙️ Ajustes</button>
+      <button class="sb-foot-btn" onclick="confirmLogout()">🚪 Cerrar sesión</button>
+    </div>
+    <div class="sb-sync" id="sbSync"></div>
+  </aside>
+
+  <!-- ── MAIN WRAP ─────────────────────────────────── -->
+  <div id="mainWrap">
+
+    <!-- TOP BAR -->
+    <div id="topBar">
+      <div id="topTitle">🎯 Mi Sistema</div>
+      <div class="top-acts">
+        <span id="syncStatus"></span>
+        <button class="top-btn" onclick="openNotifCenter()">🔔<span class="bc" id="bellC">0</span></button>
+        <button class="top-btn" onclick="openSettings()">⚙️</button>
+      </div>
+    </div>
+
+    <!-- BANNERS -->
+    <div id="offlineBanner">📡 Sin conexión — modo offline activo</div>
+    <div id="alertBanner" onclick="goTo('tareas')"></div>
+    <div id="iosBanner">
+      <span>📲</span>
+      <span>Para alertas cuando cierras el navegador: <strong>Compartir → Agregar a inicio</strong></span>
+      <button onclick="this.parentElement.classList.remove('show')" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:1rem;margin-left:auto;padding:4px">✕</button>
+    </div>
+
+    <!-- PAGES -->
+    <div id="pages">
+
+      <!-- ── INICIO (Dashboard) ───────────────────── -->
+      <div class="page active" id="pDash">
+        <div class="greet">
+          <div class="gname" id="gname">Buenos días 👋</div>
+          <div class="gtime" id="gclock">--:--:--</div>
+          <div class="gdate" id="gdate"></div>
+          <div class="gpct">
+            <div class="gpctb"><div class="gpctf" id="gpctF" style="width:0%"></div></div>
+            <div class="gpctl" id="gpctL">0%</div>
+          </div>
+          <div class="gtz" id="gtz"></div>
+        </div>
+
+        <div class="nperm" id="notifPerm">
+          <span style="font-size:1.3rem">🔔</span>
+          <div class="np-txt">Activa las notificaciones para alertas automáticas con sonido</div>
+          <button class="np-btn" onclick="reqNotif()">Activar</button>
+        </div>
+
+        <div class="stats-grid" id="dashStats"></div>
+
+        <!-- Columna derecha (desktop) -->
+        <div id="rightCol">
+          <div>
+            <div class="sh"><div class="st">⚠️ Alertas activas</div></div>
+            <div class="card" id="alertsList"></div>
+          </div>
+          <div>
+            <div class="sh"><div class="st">📊 Progreso global</div></div>
+            <div class="card" id="progressAll"></div>
+          </div>
+          <div class="qcard" id="qcard"></div>
+        </div>
+
+        <!-- Columna izquierda / móvil (tareas hoy) -->
+        <div id="todayWrap">
+          <div class="sh">
+            <div class="st">⚡ Tareas de hoy</div>
+            <button class="sea" onclick="goTo('tareas')">Ver todas →</button>
+          </div>
+          <div class="items" id="todayList"></div>
+        </div>
+      </div>
+
+      <!-- ── TAREAS ─────────────────────────────────── -->
+      <div class="page" id="pTareas">
+        <div class="chips" id="tChips">
+          <button class="chip active" onclick="setTF('hoy',this)">🌅 Hoy</button>
+          <button class="chip" onclick="setTF('mañana',this)">📅 Mañana</button>
+          <button class="chip" onclick="setTF('semana',this)">📆 Semana</button>
+          <button class="chip" onclick="setTF('todas',this)">📋 Todas</button>
+          <button class="chip" onclick="setTF('done',this)">✅ Hechas</button>
+        </div>
+        <div id="tareasSummary" style="font-size:.78rem;color:var(--mut);padding:0 2px"></div>
+        <div class="items" id="tareasList"></div>
+      </div>
+
+      <!-- ── ENFOQUE (Pomodoro) ──────────────────────── -->
+      <div class="page" id="pEnfoque">
+        <div class="card">
+          <div class="sh">
+            <div class="st">🍅 Pomodoro</div>
+            <div id="pomoCyc" style="font-size:.76rem;color:var(--mut)">Ciclo 1</div>
+          </div>
+          <div class="pw2">
+            <div class="pring">
+              <svg width="160" height="160" viewBox="0 0 160 160">
+                <circle cx="80" cy="80" r="68" fill="none" stroke="var(--bdr)" stroke-width="12"/>
+                <circle id="pomoC" cx="80" cy="80" r="68" fill="none" stroke="var(--acc)"
+                  stroke-width="12" stroke-dasharray="427.3" stroke-dashoffset="0" stroke-linecap="round"
+                  style="transition:stroke-dashoffset .5s,stroke .5s"/>
+              </svg>
+              <div class="pctr">
+                <div class="ptm" id="pomoT">25:00</div>
+                <div class="plbl" id="pomoL">TRABAJO</div>
+              </div>
+            </div>
+            <select class="psel" id="pomoSel"><option value="">— Sin tarea activa —</option></select>
+            <div class="pbtns">
+              <button class="pbtn" onclick="pomoReset()" title="Reiniciar">↺</button>
+              <button class="pbtn pri" id="pomoPB" onclick="pomoToggle()">▶ Iniciar</button>
+              <button class="pbtn" onclick="pomoSkip()" title="Saltar">⏭</button>
+            </div>
+            <div id="pomoStat" style="font-size:.76rem;color:var(--mut);text-align:center">🍅 × 0 completados hoy</div>
+          </div>
+        </div>
+        <div>
+          <div class="sh"><div class="st">💼 Trabajos / Proyectos</div></div>
+          <div class="items" id="trabajoList"></div>
+        </div>
+      </div>
+
+      <!-- ── OBJETIVOS ──────────────────────────────── -->
+      <div class="page" id="pObjetivos">
+        <div class="seg">
+          <button class="sb active" onclick="setOF('activos',this)">Activos</button>
+          <button class="sb" onclick="setOF('riesgo',this)">En riesgo</button>
+          <button class="sb" onclick="setOF('logrados',this)">Logrados</button>
+        </div>
+        <div class="items" id="objetivosList"></div>
+      </div>
+
+      <!-- ── METAS ──────────────────────────────────── -->
+      <div class="page" id="pMetas">
+        <div class="seg">
+          <button class="sb active" onclick="setMF('activas',this)">Activas</button>
+          <button class="sb" onclick="setMF('progreso',this)">En progreso</button>
+          <button class="sb" onclick="setMF('logradas',this)">Logradas</button>
+        </div>
+        <div class="items" id="metasList"></div>
+      </div>
+
+    </div><!-- /pages -->
+
+    <!-- BOTTOM NAV (mobile/tablet) -->
+    <nav id="bottomNav">
+      <button class="nav-item active" onclick="goTo('dash')"      id="n-dash">
+        <span class="ni">🏠</span><span>Inicio</span>
+        <span class="nbadge" id="nb-d"></span>
+      </button>
+      <button class="nav-item" onclick="goTo('tareas')"    id="n-tareas">
+        <span class="ni">✅</span><span>Tareas</span>
+        <span class="nbadge" id="nb-t"></span>
+      </button>
+      <button class="nav-item" onclick="goTo('enfoque')"   id="n-enfoque">
+        <span class="ni">🍅</span><span>Enfoque</span>
+      </button>
+      <button class="nav-item" onclick="goTo('objetivos')" id="n-objetivos">
+        <span class="ni">🏆</span><span>Objetivos</span>
+        <span class="nbadge" id="nb-o"></span>
+      </button>
+      <button class="nav-item" onclick="goTo('metas')"     id="n-metas">
+        <span class="ni">🚀</span><span>Metas</span>
+      </button>
+    </nav>
+
+  </div><!-- /mainWrap -->
+
+  <!-- FAB -->
+  <button id="fab" onclick="openAdd()">＋</button>
+
+  <!-- ADD/EDIT MODAL -->
+  <div class="mover" id="addModal">
+    <div class="msheet">
+      <div class="shdl"></div>
+      <div class="shtitle" id="addTitle">Nueva tarea</div>
+      <div class="tselector">
+        <button class="tbtn active" onclick="setAT('tarea',this)">✅<br>Tarea</button>
+        <button class="tbtn"        onclick="setAT('trabajo',this)">💼<br>Trabajo</button>
+        <button class="tbtn"        onclick="setAT('objetivo',this)">🏆<br>Objetivo</button>
+        <button class="tbtn"        onclick="setAT('meta',this)">🚀<br>Meta</button>
+      </div>
+      <div class="fg"><label>Nombre *</label><input id="fN" type="text" placeholder="¿Qué necesitas lograr?" autocomplete="off"/></div>
+      <div class="fg"><label>Nota</label><textarea id="fNota" placeholder="Detalles opcionales…" rows="2"></textarea></div>
+      <div class="fgr">
+        <div class="fg">
+          <label>Categoría</label>
+          <select id="fCat">
+            <option value="personal">👤 Personal</option>
+            <option value="trabajo">💼 Trabajo</option>
+            <option value="salud">💪 Salud</option>
+            <option value="finanzas">💰 Finanzas</option>
+            <option value="educación">📚 Educación</option>
+            <option value="familia">👨‍👩‍👧 Familia</option>
+            <option value="otro">📌 Otro</option>
+          </select>
+        </div>
+        <div class="fg" id="fPG">
+          <label>Prioridad</label>
+          <select id="fPrio">
+            <option value="alta">🔴 Alta</option>
+            <option value="media" selected>🟡 Media</option>
+            <option value="baja">🟢 Baja</option>
+          </select>
+        </div>
+      </div>
+      <div class="fgr">
+        <div class="fg"><label>Fecha</label><input id="fF" type="date"/></div>
+        <div class="fg" id="fHG"><label>Hora alerta ⏰</label><input id="fH" type="time"/></div>
+      </div>
+      <div class="fg" id="fPRG" style="display:none">
+        <label>Progreso: <span id="fPV">0</span>%</label>
+        <input type="range" id="fPR" min="0" max="100" value="0"
+               oninput="document.getElementById('fPV').textContent=this.value"/>
+      </div>
+      <div class="fg" id="fRG">
+        <label>Repetir</label>
+        <select id="fRep">
+          <option value="nunca">Sin repetición</option>
+          <option value="diario">Cada día</option>
+          <option value="semanal">Cada semana</option>
+        </select>
+      </div>
+      <button class="btn-big" onclick="saveAdd()">💾 Guardar</button>
+      <button class="btn-txt" onclick="closeAdd()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- DETAIL MODAL -->
+  <div class="mover" id="detModal">
+    <div class="msheet" id="detSheet"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+</div><!-- /app -->
+
+<script src="app.js"></script>
+</body>
+</html>

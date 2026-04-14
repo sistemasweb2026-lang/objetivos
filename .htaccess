@@ -1,0 +1,45 @@
+# ── Mi Sistema — Hostinger Apache Config ──────────────────
+# Activar compresión (mejora velocidad de carga)
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# Cache estático (archivos que no cambian frecuentemente)
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css                  "access plus 1 week"
+  ExpiresByType application/javascript    "access plus 1 week"
+  ExpiresByType image/svg+xml             "access plus 1 month"
+  ExpiresByType application/manifest+json "access plus 1 day"
+</IfModule>
+
+# Cache-Control headers
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  # Security headers
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Proteger archivos sensibles
+<FilesMatch "\.(sql|log|env|json)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>
+
+# Excepción: manifest.json debe ser accesible
+<Files "manifest.json">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+</Files>
+
+# Evitar listado de directorios
+Options -Indexes

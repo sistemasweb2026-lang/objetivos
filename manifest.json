@@ -1,0 +1,38 @@
+{
+  "name": "Mi Sistema – Dashboard",
+  "short_name": "Mi Sistema",
+  "description": "Dashboard personal de productividad: tareas, objetivos y metas con sincronización en la nube",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0d0d12",
+  "theme_color": "#0d0d12",
+  "orientation": "any",
+  "lang": "es",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Nueva tarea",
+      "short_name": "Tarea",
+      "description": "Añadir una nueva tarea rápidamente",
+      "url": "/?add=tarea",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Nuevo objetivo",
+      "short_name": "Objetivo",
+      "description": "Añadir un nuevo objetivo",
+      "url": "/?add=objetivo",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    }
+  ]
+}
